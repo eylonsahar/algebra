@@ -80,35 +80,42 @@ def pca(data,test_data,s):
 def open_test_data():
     my_dict = unpickle("cifar-10-batches-py/test_batch")
     all_img = my_dict[b'data']
+    labels_vec= my_dict[b'labels']
     all_img1 = gray_data(all_img)
-    return all_img1.T
+    return all_img1.T,labels_vec
+
+
+
 
 
 def build_distance_matrix(train_data, test_data):
-    num_test = test_data.shape[1]
-    num_train = train_data.shape[1]
-    dis_matrix = np.zeros(num_test,num_train)
-    for img_test in range(num_test):
-        for img_train in range(num_train):
-            dis_matrix[img_test][img_train] = np.linalg.norm(test_data[:, img_test] - train_data[:, img_train])
-    return dis_matrix
+   num_test = test_data.shape[1]
+   num_train = train_data.shape[1]
+   distances = np.empty((num_test, num_train))
+   for img_test in range(num_test):
+       distances[img_test] = np.linalg.norm(test_data[:, img_test, None] - train_data, axis=0)
+   return distances.T
 
 
-def Knn(train_data, train_labels, test_data, k):
-    dist_matrix = build_distance_matrix(train_data, test_data)
-    num_test = test_data.shape[1]
-    num_train = train_data.shape[1]
-    y_pred = np.zeros(num_test)
 
-    for i in range(num_test):
-        # Find k-nearest neighbors for each test sample
-        nearest_indices = np.argsort(dist_matrix[i])[:k]
-        nearest_labels = train_labels[nearest_indices]
 
-        # Predict the label based on majority vote
-        y_pred[i] = np.argmax(np.bincount(nearest_labels))
+def knn(test, train, labels, k):
+   distance = build_distance_matrix(test, train)
+   test_labels = np.zeros(distance.shape[0])
+   for img in range(10):#distance.shape[0]
+       nearest_labels = []
+       nearest_k = np.argsort(distance[img])[:k]
+       for i in range(k):
+           nearest_labels.append(labels[nearest_k[i]])
+       test_labels[img] = max(set(nearest_labels), key=nearest_labels.count)
+   return test_labels
 
-    return y_pred
+
+
+
+def comput_error_rate(y_predicted, y_true):
+ error_rate = np.mean(y_true != y_predicted.astype(int))
+ return error_rate
 
 
 
@@ -117,9 +124,18 @@ if __name__ == '__main__':
     # this is an example. Your path to file may be different
     data ,labels_vec = marge_data()
     center_data = centering_data(data)
-    test_data = open_test_data()
+    test_data,true_labels = open_test_data()
     center_test_data = centering_data(data)
-    pca_data ,pca_test = pca(data,test_data,5)
+    k_list = [1,25,75,125]
+    s_list = [1, 5, 20, 50]
+    for s in s_list:
+        pca_data ,pca_test = pca(data,test_data,s)
+        for k in k_list:
+           test_prediction = knn(pca_test,pca_data, labels_vec, k)
+           error_rate = comput_error_rate(test_prediction, true_labels)
+           print("for k = ", k, ", s = ", s, "the error rate is: ", error_rate)
+
+
 
 
 
