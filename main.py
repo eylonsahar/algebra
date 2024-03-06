@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 
 # Press the green button in the gutter to run the script.
-def imagee():
+def Q4():
     image = Image.open("Lion.jpeg")
     print(image.format, image.size, image.mode)
-    # image.show()
+    #image.show()
     r, g, b = image.split()
     r_pix, g_pix, b_pix = np.array(r), np.array(g), np.array(b),
 
@@ -16,7 +16,7 @@ def imagee():
     U_b_svd, S_b_svd, VT_b_svd = np.linalg.svd(b_pix, full_matrices=True, compute_uv=True)
     U_g_svd, S_g_svd, VT_g_svd = np.linalg.svd(g_pix, full_matrices=True, compute_uv=True)
 
-    k = 100
+    k = 150
 
     Ak_r = np.dot(U_r_svd[:, :k], np.dot(np.diag(S_r_svd[:k]), VT_r_svd[:k, :]))
     Ak_g = np.dot(U_g_svd[:, :k], np.dot(np.diag(S_g_svd[:k]), VT_g_svd[:k, :]))
@@ -27,6 +27,10 @@ def imagee():
     imageB = Image.fromarray(Ak_b.astype('uint8'))
 
     rgb_image = Image.merge("RGB", (imageR, imageG, imageB))
+    print(rgb_image)
+    rgb_image.show()
+    print(rgb_image.format, rgb_image.size, rgb_image.mode)
+
     error = np.sum(np.square((S_r_svd)[k:])) / np.sum(np.square((S_r_svd)))
     print(error)
 
@@ -70,7 +74,7 @@ def centering_data(data):
     return center_data
 
 def pca(data,test_data,s):
-    U ,_ ,_ = np.linalg.svd(center_data, full_matrices=False)
+    U ,_ ,_ = np.linalg.svd(data, full_matrices=False)
     Us=U[:,:s]
     train_proj = np.matmul(Us.T, data)
     test_proj = np.matmul(Us.T, test_data)
@@ -102,7 +106,7 @@ def build_distance_matrix(train_data, test_data):
 def knn(test, train, labels, k):
    distance = build_distance_matrix(test, train)
    test_labels = np.zeros(distance.shape[0])
-   for img in range(10):#distance.shape[0]
+   for img in range(distance.shape[0]):
        nearest_labels = []
        nearest_k = np.argsort(distance[img])[:k]
        for i in range(k):
@@ -121,13 +125,14 @@ def comput_error_rate(y_predicted, y_true):
 
 
 if __name__ == '__main__':
-    # this is an example. Your path to file may be different
+    #Q4()
+
     data ,labels_vec = marge_data()
     center_data = centering_data(data)
     test_data,true_labels = open_test_data()
     center_test_data = centering_data(data)
-    k_list = [1,25,75,125]
-    s_list = [1, 5, 20, 50]
+    k_list = [5,10,50,100,500]
+    s_list = [1, 10, 500,1024]
     for s in s_list:
         pca_data ,pca_test = pca(data,test_data,s)
         for k in k_list:
